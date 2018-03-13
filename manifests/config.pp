@@ -29,11 +29,13 @@ class gitlabr10khook::config inherits gitlabr10khook {
 
   # Make sure the log directory exists, this won't work for
   # recursive cause :( 
-  file { $logdir:
-    ensure => directory,
-    mode   => '0770',
-    owner  => $gitlabr10khook::user,
-    group  => $gitlabr10khook::group,
+  if ( $logdir != '/var/log' ){
+    file { $logdir:
+      ensure => directory,
+      mode   => '0770',
+      owner  => $gitlabr10khook::user,
+      group  => $gitlabr10khook::group,
+    }
   }
 
   # Make sure the log file exists and is writeable by the runner
