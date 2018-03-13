@@ -30,6 +30,19 @@ class gitlabr10khook::params {
   $install = '/opt/gitlab-puppet-webhook'
   $release = '0.4'
 
+  # install packaged dependencies
+  $python_dev = $::osfamily ? {
+    'RedHat' => 'python-devel',
+    'Debian' => 'python-dev',
+  }
+
+  $install_deps = $::osfamily ? {
+    'RedHat' => [$python_dev, 'python', 'gcc', 'openssl'],
+    'Debian' => [$python_dev, 'python-setuptools', 'python', 'openssl'],
+    #'Debian' => [$python_dev, 'python-setuptools', 'python', 'gcc', 'git', 'openssl'],
+    default  => [],
+  }
+
   # Main Preferences
   ## Port to listen on
   $server = {

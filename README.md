@@ -123,6 +123,16 @@ Required parameters are indicated by **bold**, default values are in *italics*
 
 Specifies the directory to clone the gitlab webhook into, this is done via a git clone
 
+`python_dev`
+
+The name of the python development package in your distribution; normally you wouldn't need to change this on Red Hat or Debian-like distributions (where they are python-devel and python-dev, respectively).
+
+`install_deps` 
+
+By default, an array of package names. By default, a number of build dependencies for python modules are managed. See params.pp for per-distribution defaults; you can copy this list and delete one or more items, or change the parameter to an empty array: *[]*
+
+install_deps also includes the python_dev package (above)
+
 `release` *`0.4`*
 
 The TAG of https://github.com/vollmerk/gitlab-puppet-webhook you want to checkout and use

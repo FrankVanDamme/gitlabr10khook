@@ -17,55 +17,80 @@ class gitlabr10khook::install inherits gitlabr10khook {
   # We're going to need OpenSSL and various other Python packages
   # For now we're going to assume they got them all, needs to be
   # Corrected, and allow for different OS's
-  ensure_packages(['python-devel','python','gcc','git','openssl'],{'ensure'=>'present'})
+  ensure_packages($gitlabr10khook::install_deps,{'ensure'=>'present'})
+
+  Exec {
+    path => "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/puppetlabs/bin",
+  }
 
   ## Checkout the Gitlab Puppet webhook
-  exec { 'gitlabr10khook-checkout-from-gitlab':
-    command => "git clone --branch ${gitlabr10khook::release} https://github.com/vollmerk/gitlab-puppet-webhook.git ${gitlabr10khook::install}",
-    user    => 'root',
-    require => Package['git'],
-    creates => $gitlabr10khook::install,
-    notify  => Exec['gitlabr10khook-update-python-daemon'],
+  $vcsrepo_user = $gitlabr10khook::server['user'] ? {
+    undef   => 'root',
+    default => $gitlabr10khook::server[user],
+  }
+  notify {"vcsrepo_user: $vcsrepo_user":}
+
+  vcsrepo { 'gitlabr10khook-checkout-from-gitlab':
+    ensure   => present,
+    provider => git,
+    user     => 'root',
+    owner    => $vcsrepo_user,
+    path     => "${gitlabr10khook::install}",
+    source   => 'https://github.com/vollmerk/gitlab-puppet-webhook.git',
+    revision => "${gitlabr10khook::release}",
   }
 
-  exec { 'gitlabr10khook-pip':
-    command     => 'easy_install pip',
-    user        => 'root',
-    require     => Package['python'],
-    refreshonly => true,
+  if ( $::operatingsystem == 'Debian' and versioncmp( $::operatingsystemrelease , '9.0' ) >= 0 ){
+    package { [ "python-pip" ]:
+      ensure => installed,
+      before => Package['gitlabr10khook-slackweb'],
+    }
+    # python-daemon's version in Debian 9 is 2.1.2
+    # For Debian 8, you may want to use jessie-backports
+    package { [ "python-daemon"]:
+      ensure  => installed,
+      require => Package['python-pip'],
+    }
+    package  { 'gitlabr10khook-psutil':
+      name    => 'python-psutil',
+      ensure  => installed,
+      require => Package['python-pip'],
+    }
+
+  } else { # Red Hat and friends
+
+    exec { 'gitlabr10khook-pip':
+      command     => 'easy_install pip',
+      user        => 'root',
+      require     => [ Package['python'], Vcsrepo['gitlabr10khook-checkout-from-gitlab'] ],
+      before      => Package['gitlabr10khook-slackweb'],
+    }
+    ## Upgrade Python-Daemon so it works
+    package { "python-daemon":
+      ensure   => latest,
+      provider => pip,
+      require  => Exec['gitlabr10khook-pip'],
+    }
+    package { 'gitlabr10khook-psutil':
+      name     => 'psutil',
+      provider => pip,
+      ensure   => latest,
+      require  => Exec['gitlabr10khook-pip'],
+    }
   }
 
-  ## Upgrade Python-Daemon so it works
-  exec { 'gitlabr10khook-update-python-daemon':
-    command     => 'pip install --upgrade python-daemon',
-    user        => 'root',
-    require     => Exec['gitlabr10khook-pip'],
-    refreshonly => true,
-    notify      => Exec['gitlabr10khook-slackweb'],
+  # PSutil requires gcc to compile, so if we took responsibility over getting
+  # it installed, we have to require that package
+  if (defined (Package['gcc'])){
+    Package['gcc'] -> Package['gitlabr10khook-psutil']
+  }
+  if (defined (Package["${gitlabr10khook::python_dev}"])){
+    Package["${gitlabr10khook::python_dev}"] -> Package['gitlabr10khook-psutil']
   }
 
-  exec { 'gitlabr10khook-slackweb':
-    command     => 'pip install slackweb',
-    user        => 'root',
-    require     => Exec['gitlabr10khook-pip'],
-    refreshonly => true,
-    notify      => Exec['gitlabr10khook-psutil'],
-  }
-
-  # PSutil requires gcc to compile, so we have to require that package
-  exec { 'gitlabr10khook-psutil':
-    command     => 'pip install psutil',
-    user        => 'root',
-    require     => [Exec['gitlabr10khook-pip'],Package['gcc'],Package['python-devel']],
-    refreshonly => true,
-  }
-
-  ## Make sure we've checked out the specified release
-  exec { 'gitlabr10khook-checkout-tag-from-gitlab':
-    command => "git checkout master;git fetch;git checkout tags/${gitlabr10khook::release}",
-    cwd     => $gitlabr10khook::install,
-    user    => 'root',
-    require => Exec['gitlabr10khook-checkout-from-gitlab'],
-    unless  => "git name-rev --tags --name-only $(git rev-parse HEAD) | grep ${gitlabr10khook::release}",
+  package { 'gitlabr10khook-slackweb':
+    name     => 'slackweb',
+    provider => pip,
+    ensure   => latest
   }
 }
