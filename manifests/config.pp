@@ -44,7 +44,6 @@ class gitlabr10khook::config inherits gitlabr10khook {
     mode    => '0660',
     owner   => $gitlabr10khook::user,
     group   => $gitlabr10khook::group,
-    require => File[$logdir],
   }
 
   # Add the service to /etc/systemd/system
