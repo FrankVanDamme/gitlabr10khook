@@ -20,7 +20,7 @@ class gitlabr10khook::config inherits gitlabr10khook {
     ensure  => file,
     mode    => '0640',
     owner   => 'root',
-    group   => $gitlabr10khook::group,
+    group   => $gitlabr10khook::intserver[group],
     content => template('gitlabr10khook/webhook-puppet.erb'),
   }
 
