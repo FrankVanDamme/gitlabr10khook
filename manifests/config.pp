@@ -20,12 +20,20 @@ class gitlabr10khook::config inherits gitlabr10khook {
     ensure  => file,
     mode    => '0640',
     owner   => 'root',
-    group   => $gitlabr10khook::intserver[group],
+    group   => $gitlabr10khook::server['group'],
     content => template('gitlabr10khook/webhook-puppet.erb'),
   }
 
   $logfile = $gitlabr10khook::log['filename']
   $logdir = dirname($logfile)
+
+  ## We're going to assume you're using the puppetlabs-firewall module
+  # FIXME: There should be an enable on this, and some legit config
+  firewall { '100 GitlabWebhook Allow': 
+    proto   => tcp,
+    dport   => $gitlabr10khook::intserver['port'],
+    action  => accept,
+  }
 
   # Make sure the log directory exists, this won't work for
   # recursive cause :( 
@@ -33,8 +41,8 @@ class gitlabr10khook::config inherits gitlabr10khook {
     file { $logdir:
       ensure => directory,
       mode   => '0770',
-      owner  => $gitlabr10khook::user,
-      group  => $gitlabr10khook::group,
+    owner  => $gitlabr10khook::server['user'],
+    group  => $gitlabr10khook::server['group'],
     }
   }
 
@@ -42,8 +50,9 @@ class gitlabr10khook::config inherits gitlabr10khook {
   file { $logfile:
     ensure  => file,
     mode    => '0660',
-    owner   => $gitlabr10khook::user,
-    group   => $gitlabr10khook::group,
+    owner   => $gitlabr10khook::server['user'],
+    group   => $gitlabr10khook::server['group'],
+    require => File[$logdir],
   }
 
   # Add the service to /etc/systemd/system
