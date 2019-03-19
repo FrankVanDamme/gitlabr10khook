@@ -17,6 +17,7 @@
 # @param legacy Turn off legacy... just do it trust me
 # @param footprints Settings for footprints e-mail updates
 # @param otrs Settings for OTRS e-mail update functionality
+# @param firewall Enable firewall rule
 #
 # Authors
 # -------
@@ -129,5 +130,6 @@ class gitlabr10khook::params {
     email     => undef,
   }
 
+  $firewall = true
 
 }

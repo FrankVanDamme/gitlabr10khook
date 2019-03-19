@@ -29,10 +29,13 @@ class gitlabr10khook::config inherits gitlabr10khook {
 
   ## We're going to assume you're using the puppetlabs-firewall module
   # FIXME: There should be an enable on this, and some legit config
-  firewall { '100 GitlabWebhook Allow': 
-    proto   => tcp,
-    dport   => $gitlabr10khook::intserver['port'],
-    action  => accept,
+  if ( $gitlabr10khook::firewall == true ){
+    notify{"foo":}
+    firewall { '100 GitlabWebhook Allow': 
+      proto   => tcp,
+      dport   => $gitlabr10khook::intserver['port'],
+      action  => accept,
+    }
   }
 
   # Make sure the log directory exists, this won't work for
@@ -41,8 +44,9 @@ class gitlabr10khook::config inherits gitlabr10khook {
     file { $logdir:
       ensure => directory,
       mode   => '0770',
-    owner  => $gitlabr10khook::server['user'],
-    group  => $gitlabr10khook::server['group'],
+      owner  => $gitlabr10khook::server['user'],
+      group  => $gitlabr10khook::server['group'],
+      before => $logfile,
     }
   }
 
@@ -52,7 +56,6 @@ class gitlabr10khook::config inherits gitlabr10khook {
     mode    => '0660',
     owner   => $gitlabr10khook::server['user'],
     group   => $gitlabr10khook::server['group'],
-    require => File[$logdir],
   }
 
   # Add the service to /etc/systemd/system

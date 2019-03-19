@@ -46,6 +46,7 @@ class gitlabr10khook  (
   $legacy       = $gitlabr10khook::params::legacy,
   $footprints   = $gitlabr10khook::params::footprints,
   $otrs         = $gitlabr10khook::params::otrs,
+  $firewall     = $gitlabr10khook::params::firewall,
 ) inherits gitlabr10khook::params {
 
   # Merge defaults
